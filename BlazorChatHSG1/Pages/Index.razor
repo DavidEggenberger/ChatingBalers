@@ -1,0 +1,16 @@
+﻿@page "/"
+@inject NavigationManager nav
+<h1>Willkommen</h1>
+
+<p>Legen sie sich bitte einen Username an</p>
+<input @bind="userName" @bind:event="oninput"/>
+<br />
+<button class="btn btn-primary" @onclick="Fortfahren">Mit <strong>@userName</strong> als Username fortfahren</button>
+
+@code {
+    public string userName;      
+    void Fortfahren()
+    {
+        nav.NavigateTo("Chat/" + userName);
+    }
+}
