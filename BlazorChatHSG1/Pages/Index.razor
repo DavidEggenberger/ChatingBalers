@@ -1,16 +1,107 @@
 ﻿@page "/"
-@inject NavigationManager nav
-<h1>Willkommen</h1>
+@using DataTypes
+@using Microsoft.AspNetCore.SignalR.Client
+@using Newtonsoft.Json
 
-<p>Legen sie sich bitte einen Username an</p>
-<input @bind="userName" @bind:event="oninput"/>
-<br />
-<button class="btn btn-primary" @onclick="Fortfahren">Mit <strong>@userName</strong> als Username fortfahren</button>
+@if (nutzer != null)
+{
+    <h1 style="color: #00802F;">Chatten Sie @nutzer.Name.ToUpper() Los!</h1>
+}
 
+@if (!FortFahren)
+{
+    <p style="color: #00802F; font-size: x-large"><strong>Legen sie sich bitte einen Username an</strong></p>
+    <div class="row pl-3" style="text-align: center;">
+        <input @bind="userName" @bind:event="oninput" style="border: 1px solid #00802F; min-width: 350px; min-height: 30px; font-size: 25px; color: #00802F;" />
+        <button class="btn btn-primary" style="background-color: #00802F; border: 1px solid #00802F;" disabled="@länge" @onclick="Fortfahren"><h3 style="text-align:center; padding-top: 10px;">Mit <strong>@userName</strong> als Username fortfahren</h3></button>
+    </div>
+    <p style="color: #00802F; font-size: large">@nachricht</p>
+}
+@if (FortFahren)
+{
+    <div class="row">
+        <div class="col-4">
+            <input @bind="message" @bind:event="oninput" @onkeypress="Senden" style="border: 1px solid #00802F; min-width: 350px; min-height: 30px; font-size: 25px; color: #00802F;" />
+            <p style="color: #00802F; font-size: large"><strong>Mit Enter senden Sie</strong></p>
+            <p style="color: #00802F; font-size: x-large">@message</p>
+        </div>
+        <div class="col-4">
+            @foreach (var item in Nachrichten)
+            {
+                <div class="alert alert-success col-12">
+                    <div class="row">
+                        <strong>@(item.Verfasser.Name + ": ")</strong>
+                        <p class="col-9">@(item.MessageFormatiert)</p>
+                        <p>@item.GeschriebenZeit.ToShortTimeString()</p>
+                    </div>
+                </div>
+            }
+        </div>
+        <br />
+    </div>
+}
 @code {
-    public string userName;      
+    bool länge = true;
+    string nachricht;
+    Nutzer nutzer;
+    private string myVar;
+
+    public string userName
+    {
+        get { return myVar; }
+        set
+        {
+            myVar = value;
+            if (value.Length >= 4)
+            {
+                länge = false;
+                nachricht = "";
+            }
+            else
+            {
+                länge = true;
+                nachricht = value + " ist zu kurz => mindestens 4 Zeichen";
+            }
+        }
+    }
+
+    bool FortFahren;
     void Fortfahren()
     {
-        nav.NavigateTo("Chat/" + userName);
+        FortFahren = true;
+        nutzer = new Nutzer(userName);
+        na = new Nachricht(nutzer);
+    }
+    public string Name { get; set; }
+    string message;
+    List<Nachricht> Nachrichten;
+    HubConnection connection;
+    Nachricht na;
+    protected override async Task OnInitializedAsync()
+    {
+        Nachrichten = new List<Nachricht>();
+        connection = new HubConnectionBuilder()
+                .WithUrl("https://localhost:44349/chathub")
+                .WithAutomaticReconnect()
+                .Build();
+
+        connection.On<string>("Empfangen", s => Empfangen(s));
+        await connection.StartAsync();
+    }
+    public void Empfangen(string n)
+    {
+        Nachricht na = JsonConvert.DeserializeObject<Nachricht>(n);
+        Nachrichten.Add(na);
+        StateHasChanged();
+    }
+    public async Task Senden(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            Nachricht nach = new Nachricht(nutzer, message);
+            string output = JsonConvert.SerializeObject(nach);
+            await connection.InvokeAsync("SendMessage", output);
+            message = string.Empty;
+        }
     }
 }
