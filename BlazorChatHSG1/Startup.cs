@@ -29,7 +29,6 @@ namespace BlazorChat
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSingleton<WeatherForecastService>();
             services.AddSignalR();
         }
 
@@ -49,14 +48,14 @@ namespace BlazorChat
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
+            
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
-                endpoints.MapHub<Chathub>("/hub");
+                endpoints.MapHub<Chathub>("/chathub");
             });
         }
     }
