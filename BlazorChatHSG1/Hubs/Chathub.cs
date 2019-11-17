@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using BlazorChat.DataTypes;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,9 +9,9 @@ namespace BlazorChatHSG1.Hubs
 {
     public class Chathub : Hub
     {
-        public async Task SendMessage(string nachricht)
+        public async Task SendMessage(string n)
         {
-            await Clients.All.SendAsync("Empfangen", nachricht);
+            await Clients.All.SendAsync("Empfangen", n);
         }
     }
 }
